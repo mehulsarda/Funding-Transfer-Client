@@ -10,7 +10,7 @@ function App() {
       console.log(window.ethereum);
     }
 
-    loadProvider();
+    // loadProvider();
 
   }, [])
 
@@ -21,7 +21,12 @@ function App() {
         <div className="card-body">
           <h5 className="card-title">Balance: 20 ETH </h5>
           <p className="card-text">Account : 0x000000000</p>
-          <button type="button" className="btn btn-success">
+          <button type="button" className="btn btn-success"
+            onClick={async () => {
+              // function that connects to metamask account
+              const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+              console.log(accounts);
+            }}>
             Connect to metamask
           </button>
           &nbsp;
