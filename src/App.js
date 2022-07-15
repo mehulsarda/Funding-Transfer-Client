@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import logo from './logo.svg';
+// import logo from './logo.svg';
 import './App.css';
 import Web3 from 'web3';
 import detectEthereumProvider from '@metamask/detect-provider';
@@ -15,6 +15,7 @@ function App() {
 
   const [account, setAccount] = useState(null);
   const [balance, setBalance] = useState(null);
+  const [accbalance, setAccBalance] = useState(null);
   const [reload, shouldReload] = useState(false);
 
   const reloadEffect = () => {
@@ -78,10 +79,21 @@ function App() {
   }, [])
 
   useEffect(() => {
+    const getAccount = async () => {
+      const accounts = await web3Api.web3.eth.getAccounts();
+
+      setAccount(accounts[0]);
+    }
+
+    web3Api.web3 && getAccount();
+
+  }, [web3Api.web3])
+
+  useEffect(() => {
     const loadBalance = async () => {
       const { contract, web3 } = web3Api;
       const balance = await web3.eth.getBalance(contract.address);
-      setBalance(web3.utils.fromWei(balance, 'ether'))
+      setBalance(web3.utils.fromWei(balance, 'ether'));
     }
 
     web3Api.contract && loadBalance();
@@ -108,26 +120,28 @@ function App() {
   }
 
 
-  useEffect(() => {
-    const getAccount = async () => {
-      const accounts = await web3Api.web3.eth.getAccounts();
+  // console.log(web3Api.web3)
 
-      setAccount(accounts[0]);
+  // home work -----> metamask wallet account balance fetch
+  useEffect(() => {
+    const getAccBalance = async () => {
+      const { web3 } = web3Api;
+      const accbalance = await web3.eth.getBalance(account);
+      setAccBalance(web3.utils.fromWei(accbalance, 'ether'));
     }
 
-    web3Api.web3 && getAccount();
+    account && getAccBalance();
 
-  }, [web3Api.web3])
-
-  // console.log(web3Api.web3)
+  }, [account, web3Api.web3, reload])
 
   return (
     <>
       <div className="card text-center">
         <div className="card-header">Funding</div>
         <div className="card-body">
-          <h5 className="card-title">Balance: {balance} ETH </h5>
+          <h5 className="card-title">Contract Balance: {balance} ETH </h5>
           <p className="card-text">Account : {account ? account : `No Account or Not Connected`}</p>
+          <h5 className="card-title">Account Balance: {accbalance} ETH </h5>
           {/* <button type="button" className="btn btn-success"
             onClick={async () => {
               // function that connects to metamask account
