@@ -3,15 +3,23 @@ import logo from './logo.svg';
 import './App.css';
 import Web3 from 'web3';
 import detectEthereumProvider from '@metamask/detect-provider';
+import { loadContract } from './utils/load-contract';
 
 function App() {
 
   const [web3Api, setweb3Api] = useState({
     provider: null,
-    web3: null
+    web3: null,
+    contract: null
   })
 
   const [account, setAccount] = useState(null);
+  const [balance, setBalance] = useState(null);
+  const [reload, shouldReload] = useState(false);
+
+  const reloadEffect = () => {
+    shouldReload(!reload);
+  }
 
 
   useEffect(() => {
@@ -19,11 +27,14 @@ function App() {
 
       // 2nd and easy method to connect metamask
       const provider = await detectEthereumProvider();
+      const contract = await loadContract("Funder", provider);
+
       if (provider) {
         provider.request({ method: "eth_requestAccounts" });
         setweb3Api({
           web3: new Web3(provider),
           provider,
+          contract
         })
       }
       else {
@@ -67,6 +78,37 @@ function App() {
   }, [])
 
   useEffect(() => {
+    const loadBalance = async () => {
+      const { contract, web3 } = web3Api;
+      const balance = await web3.eth.getBalance(contract.address);
+      setBalance(web3.utils.fromWei(balance, 'ether'))
+    }
+
+    web3Api.contract && loadBalance();
+
+  }, [web3Api, reload])
+
+
+  const transferFund = async () => {
+    const { contract, web3 } = web3Api;
+    await contract.transfer({
+      from: account,
+      value: web3.utils.toWei("1", "ether")
+    })
+    reloadEffect();
+  }
+
+  const withdrawFund = async () => {
+    const { contract, web3 } = web3Api;
+    const withdrawAmount = web3.utils.toWei("1.5", "ether");
+    await contract.withdraw(withdrawAmount, {
+      from: account
+    })
+    reloadEffect();
+  }
+
+
+  useEffect(() => {
     const getAccount = async () => {
       const accounts = await web3Api.web3.eth.getAccounts();
 
@@ -84,7 +126,7 @@ function App() {
       <div className="card text-center">
         <div className="card-header">Funding</div>
         <div className="card-body">
-          <h5 className="card-title">Balance: 20 ETH </h5>
+          <h5 className="card-title">Balance: {balance} ETH </h5>
           <p className="card-text">Account : {account ? account : `No Account or Not Connected`}</p>
           {/* <button type="button" className="btn btn-success"
             onClick={async () => {
@@ -95,11 +137,11 @@ function App() {
             Connect to metamask
           </button> */}
           &nbsp;
-          <button type="button" className="btn btn-success ">
+          <button type="button" className="btn btn-success" onClick={transferFund}>
             Transfer
           </button>
           &nbsp;
-          <button type="button" className="btn btn-primary ">
+          <button type="button" className="btn btn-primary" onClick={withdrawFund}>
             Withdraw
           </button>
         </div>
